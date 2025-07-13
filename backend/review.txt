@@ -1,0 +1,277 @@
+# 백엔드 코드 리뷰
+
+## 📁 전체 구조 분석
+
+```
+backend/src/
+├── server.ts              # 메인 서버 진입점
+├── types.ts               # 타입 정의
+├── routes/
+│   └── surveys.ts         # 설문 관련 라우터
+├── controllers/
+│   └── surveyController.ts # 비즈니스 로직 처리
+├── services/
+│   └── aiService.ts       # AI 평가 서비스
+├── models/
+│   └── survey.ts          # 설문 메타데이터
+└── utils/
+    ├── database.ts        # 데이터베이스 연결 및 쿼리
+    └── logger.ts          # 로깅 유틸리티
+```
+
+## 🔄 API 호출 흐름 분석
+
+### 1. 서버 시작 흐름
+```
+server.ts → dotenv.config() → 미들웨어 설정 → 라우터 등록 → 서버 시작
+```
+
+### 2. API 엔드포인트별 흐름
+
+#### GET /api/surveys (설문 목록 조회)
+```
+클라이언트 요청
+    ↓
+server.ts (라우터 등록)
+    ↓
+routes/surveys.ts (router.get("/", ...))
+    ↓
+controllers/surveyController.ts (getSurveys)
+    ↓
+models/survey.ts (SURVEY_METADATA)
+    ↓
+JSON 응답 반환
+```
+
+코드 흐름:
+```typescript
+// 1. 라우터에서 컨트롤러 메서드 호출
+router.get("/", surveyController.getSurveys.bind(surveyController));
+
+// 2. 컨트롤러에서 메타데이터 조회
+async getSurveys(req: Request, res: Response) {
+  const surveys = Object.values(SURVEY_METADATA).map((metadata) => ({
+    type: metadata.type,
+    name: metadata.name,
+    description: metadata.description,
+    // ...
+  }));
+  res.json({ surveys });
+}
+```
+
+#### GET /api/surveys/:type (특정 설문 메타데이터)
+```
+클라이언트 요청 (/api/surveys/teto-gender)
+    ↓
+routes/surveys.ts (router.get("/:type", ...))
+    ↓
+controllers/surveyController.ts (getSurveyMetadata)
+    ↓
+models/survey.ts (SURVEY_METADATA[type])
+    ↓
+JSON 응답 반환
+```
+
+#### GET /api/surveys/:type/questions (설문 질문 조회)
+```
+클라이언트 요청 (/api/surveys/teto-gender/questions?lang=ko)
+    ↓
+routes/surveys.ts (router.get("/:type/questions", ...))
+    ↓
+controllers/surveyController.ts (getSurveyQuestions)
+    ↓
+getTemporaryQuestions() (임시 데이터)
+    ↓
+JSON 응답 반환
+```
+
+현재 문제점: 실제로는 DB에서 조회해야 하지만 임시 데이터를 사용 중
+
+#### POST /api/surveys/:type/evaluate (AI 평가)
+```
+클라이언트 요청 (POST /api/surveys/teto-gender/evaluate)
+    ↓
+routes/surveys.ts (router.post("/:type/evaluate", ...))
+    ↓
+controllers/surveyController.ts (evaluateSurvey)
+    ↓
+services/aiService.ts (evaluateSurvey)
+    ↓
+Google Gemini AI API 호출
+    ↓
+JSON 응답 반환
+```
+
+## ✅ 주요 특징 및 장점
+
+### 1. 계층 분리
+- Routes: URL 라우팅만 담당
+- Controllers: 비즈니스 로직 처리
+- Services: 외부 API 연동 (AI)
+- Models: 데이터 구조 정의
+
+### 2. 타입 안전성
+- TypeScript로 타입 정의
+- SurveyType, SurveyQuestion 등 명확한 인터페이스
+
+### 3. 에러 처리
+- try-catch 블록으로 예외 처리
+- 적절한 HTTP 상태 코드 반환
+
+### 4. 확장성
+- 설문 유형별로 분리된 구조
+- 다국어 지원 구조
+
+## ⚠️ 개선이 필요한 부분들
+
+### 1. 데이터베이스 연동 미완성
+```typescript
+// 현재: 임시 데이터 사용
+private getTemporaryQuestions(type: SurveyType, language: string) {
+  // 하드코딩된 질문들...
+}
+
+// 개선 필요: DB에서 조회
+async getSurveyQuestions(req: Request, res: Response) {
+  const dbService = getDatabaseService();
+  const questions = await dbService.getSurveyQuestions(surveyTypeId, language);
+  // ...
+}
+```
+
+### 2. 데이터베이스 서비스 미사용
+- utils/database.ts에 완성된 DB 서비스가 있지만 컨트롤러에서 사용하지 않음
+- 실제 DB 연동이 필요한 부분
+
+### 3. 환경변수 검증 부족
+```typescript
+// 현재: 런타임에만 오류 발생
+if (!apiKey) {
+  throw new Error("GEMINI_API_KEY environment variable is required");
+}
+
+// 개선: 서버 시작 시 검증
+const requiredEnvVars = ['GEMINI_API_KEY', 'DB_HOST', 'DB_USER'];
+requiredEnvVars.forEach(varName => {
+  if (!process.env[varName]) {
+    throw new Error(`Missing required environment variable: ${varName}`);
+  }
+});
+```
+
+### 4. 응답 형식 일관성 부족
+```typescript
+// 현재: 엔드포인트별로 다른 응답 형식
+res.json({ surveys });           // GET /api/surveys
+res.json({ metadata });          // GET /api/surveys/:type
+res.json({ type, questions });   // GET /api/surveys/:type/questions
+
+// 개선: 표준 응답 형식
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  timestamp: string;
+}
+```
+
+## 🔧 권장 개선사항
+
+### 1. 데이터베이스 연동 완성
+```typescript
+// controllers/surveyController.ts 수정
+import { getDatabaseService } from "../utils/database";
+
+export class SurveyController {
+  private dbService: DatabaseService;
+
+  constructor() {
+    this.dbService = getDatabaseService();
+  }
+
+  async getSurveyQuestions(req: Request, res: Response) {
+    const { type } = req.params;
+    const { lang = "ko" } = req.query;
+    
+    // DB에서 설문 유형 조회
+    const surveyType = await this.dbService.getSurveyType(type);
+    if (!surveyType) {
+      return res.status(404).json({ error: "Survey type not found" });
+    }
+    
+    // DB에서 질문 조회
+    const questions = await this.dbService.getSurveyQuestions(
+      surveyType.id, 
+      lang as string
+    );
+    
+    res.json({ type, questions, metadata: surveyType });
+  }
+}
+```
+
+### 2. 표준 응답 형식 도입
+```typescript
+// utils/response.ts 생성
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  timestamp: string;
+}
+
+export function createResponse<T>(
+  data: T, 
+  success: boolean = true, 
+  message?: string
+): ApiResponse<T> {
+  return {
+    success,
+    data,
+    message,
+    timestamp: new Date().toISOString(),
+  };
+}
+```
+
+### 3. 환경변수 검증 강화
+```typescript
+// server.ts에 추가
+function validateEnvironment() {
+  const required = ['GEMINI_API_KEY', 'DB_HOST', 'DB_USER', 'DB_NAME'];
+  const missing = required.filter(key => !process.env[key]);
+  
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+}
+
+validateEnvironment();
+```
+
+## 📊 현재 상태 요약
+
+| 구성 요소 | 상태 | 완성도 |
+|-----------|------|--------|
+| 서버 구조 | ✅ 완성 | 90% |
+| 라우팅 | ✅ 완성 | 100% |
+| 컨트롤러 | ✅ 완성 | 80% |
+| AI 서비스 | ✅ 완성 | 90% |
+| 데이터베이스 서비스 | ✅ 완성 | 100% |
+| DB 연동 | ❌ 미완성 | 30% |
+| 응답 형식 | ⚠️ 개선 필요 | 60% |
+| 에러 처리 | ✅ 완성 | 85% |
+
+## 📝 결론
+
+전반적으로 잘 구성된 백엔드 구조이지만, 실제 데이터베이스 연동과 응답 형식 표준화가 필요한 상태입니다.
+
+### 우선순위별 개선 작업:
+1. 데이터베이스 연동 완성 (높음)
+2. 표준 응답 형식 도입 (중간)
+3. 환경변수 검증 강화 (중간)
+4. 에러 처리 개선 (낮음)
+
+리뷰 작성일: 2024-07-13
+리뷰어: AI Assistant 
