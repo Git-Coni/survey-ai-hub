@@ -4,8 +4,14 @@
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
-    "dev": "ts-node src/server.ts",
+    "dev": "NODE_ENV=local ts-node src/server.ts",
+    "dev:dev": "NODE_ENV=dev ts-node src/server.ts",
+    "dev:prd": "NODE_ENV=prd ts-node src/server.ts",
     "build": "tsc",
+    "build:dev": "NODE_ENV=dev tsc",
+    "build:prd": "NODE_ENV=prd tsc",
+    "start:dev": "NODE_ENV=dev node dist/server.js",
+    "start:prd": "NODE_ENV=prd node dist/server.js",
     "migrate": "node database/migrate.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -1,9 +1,6 @@
 import mysql from "mysql2/promise";
 import { logger } from "./logger";
-import dotenv from "dotenv";
-
-// .env 파일 로드 (database.ts에서 직접 로드)
-dotenv.config();
+import { getConfig } from "../config";
 
 export interface DatabaseConfig {
   host: string;
@@ -217,34 +214,20 @@ let databaseService: DatabaseService | null = null;
 
 export function getDatabaseService(): DatabaseService {
   if (!databaseService) {
-    // 환경변수 디버깅 로그
-    logger.info("Environment variables check:");
+    const appConfig = getConfig();
+
+    // 환경 설정 디버깅 로그
+    logger.info(`Current environment: ${appConfig.environment}`);
     logger.info(
-      `DB_HOST: ${process.env.DB_HOST || "not set (using default: localhost)"}`
-    );
-    logger.info(
-      `DB_USER: ${process.env.DB_USER || "not set (using default: root)"}`
-    );
-    logger.info(
-      `DB_NAME: ${
-        process.env.DB_NAME || "not set (using default: survey_ai_hub)"
-      }`
-    );
-    logger.info(
-      `DB_PORT: ${process.env.DB_PORT || "not set (using default: 3306)"}`
-    );
-    logger.info(
-      `DB_PASSWORD: ${
-        process.env.DB_PASSWORD ? "set" : "not set (using default: empty)"
-      }`
+      `Database config: ${appConfig.database.host}:${appConfig.database.port}/${appConfig.database.database}`
     );
 
     const config: DatabaseConfig = {
-      host: process.env.DB_HOST || "localhost",
-      user: process.env.DB_USER || "root",
-      password: process.env.DB_PASSWORD || "",
-      database: process.env.DB_NAME || "survey_ai_hub",
-      port: parseInt(process.env.DB_PORT || "3306"),
+      host: appConfig.database.host,
+      user: appConfig.database.user,
+      password: appConfig.database.password,
+      database: appConfig.database.database,
+      port: appConfig.database.port,
     };
 
     databaseService = new DatabaseService(config);

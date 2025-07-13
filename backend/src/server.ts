@@ -4,16 +4,18 @@ import dotenv from "dotenv";
 import { getDatabaseService } from "./utils/database";
 import { logger } from "./utils/logger";
 import surveyRoutes from "./routes/surveys";
+import { getConfig, validateConfig } from "./config";
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const config = getConfig();
+const PORT = config.server.port;
 
 // Middleware
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: config.server.frontendUrl,
     credentials: true,
   })
 );
@@ -43,6 +45,16 @@ app.get("/", (req, res) => {
 // 서버 시작 및 DB 연결 테스트
 async function startServer() {
   try {
+    // 설정 유효성 검사
+    if (!validateConfig(config)) {
+      logger.error("Invalid configuration. Server will not start.");
+      process.exit(1);
+    }
+
+    logger.info(`Starting server in ${config.environment} environment`);
+    logger.info(`Server port: ${config.server.port}`);
+    logger.info(`Frontend URL: ${config.server.frontendUrl}`);
+
     // DB 연결 테스트
     const dbService = getDatabaseService();
     const isConnected = await dbService.testConnection();
