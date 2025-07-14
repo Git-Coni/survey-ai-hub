@@ -1,4 +1,4 @@
-import mysql from "mysql2/promise";
+import mysql, { RowDataPacket } from "mysql2/promise";
 import { logger } from "./logger";
 import { getConfig } from "../config";
 
@@ -10,12 +10,26 @@ export interface DatabaseConfig {
   port?: number;
 }
 
+// MySQL 버전 결과를 위한 인터페이스
+interface VersionRow extends RowDataPacket {
+  version: string;
+}
+
 export class DatabaseService {
   private pool: mysql.Pool;
   private config: DatabaseConfig;
 
   constructor(config: DatabaseConfig) {
     this.config = config;
+
+    // 설정값 로깅
+    logger.info("데이터베이스 연결 설정:", {
+      host: config.host,
+      user: config.user,
+      database: config.database,
+      port: config.port || 3306,
+    });
+
     this.pool = mysql.createPool({
       host: config.host,
       user: config.user,
@@ -32,13 +46,25 @@ export class DatabaseService {
   // 연결 테스트
   async testConnection(): Promise<boolean> {
     try {
+      logger.info("데이터베이스 연결 시도 중...");
       const connection = await this.pool.getConnection();
       await connection.ping();
+
+      const [rows] = await connection.execute<VersionRow[]>(
+        "SELECT VERSION() as version"
+      );
+      logger.info("데이터베이스 연결 성공:", { version: rows[0]?.version });
+
       connection.release();
-      logger.info("Database connection successful");
       return true;
     } catch (error) {
-      logger.error("Database connection failed:", error);
+      logger.error("데이터베이스 연결 실패. 상세 정보:", {
+        host: this.config.host,
+        user: this.config.user,
+        database: this.config.database,
+        port: this.config.port,
+        error: error,
+      });
       return false;
     }
   }
@@ -47,7 +73,7 @@ export class DatabaseService {
   async getSurveyTypes(): Promise<any[]> {
     try {
       const [rows] = await this.pool.execute(`
-        SELECT 
+        SELECT
           st.*,
           GROUP_CONCAT(sl.language_code) as supported_languages
         FROM survey_types st
@@ -68,7 +94,7 @@ export class DatabaseService {
     try {
       const [rows] = await this.pool.execute(
         `
-        SELECT 
+        SELECT
           st.*,
           GROUP_CONCAT(sl.language_code) as supported_languages
         FROM survey_types st
@@ -94,7 +120,7 @@ export class DatabaseService {
     try {
       const [rows] = await this.pool.execute(
         `
-        SELECT 
+        SELECT
           q.id,
           q.question_key,
           q.step,
@@ -217,10 +243,13 @@ export function getDatabaseService(): DatabaseService {
     const appConfig = getConfig();
 
     // 환경 설정 디버깅 로그
-    logger.info(`Current environment: ${appConfig.environment}`);
-    logger.info(
-      `Database config: ${appConfig.database.host}:${appConfig.database.port}/${appConfig.database.database}`
-    );
+    logger.info("데이터베이스 서비스 초기화:", {
+      environment: appConfig.environment,
+      host: appConfig.database.host,
+      port: appConfig.database.port,
+      database: appConfig.database.database,
+      user: appConfig.database.user,
+    });
 
     const config: DatabaseConfig = {
       host: appConfig.database.host,
@@ -229,6 +258,18 @@ export function getDatabaseService(): DatabaseService {
       database: appConfig.database.database,
       port: appConfig.database.port,
     };
+
+    // 설정값 유효성 검사
+    if (!config.host || !config.user || !config.password || !config.database) {
+      logger.error("데이터베이스 설정 누락:", {
+        hasHost: !!config.host,
+        hasUser: !!config.user,
+        hasPassword: !!config.password,
+        hasDatabase: !!config.database,
+        hasPort: !!config.port,
+      });
+      throw new Error("필수 데이터베이스 설정이 누락되었습니다.");
+    }
 
     databaseService = new DatabaseService(config);
   }

@@ -5,18 +5,24 @@ import { AIService } from "../services/aiService";
 import { logger } from "../utils/logger";
 
 export class SurveyController {
-  private aiService: AIService;
-  private dbService: ReturnType<typeof getDatabaseService>;
+  private aiService: AIService | null = null;
+  private dbService: ReturnType<typeof getDatabaseService> | null = null;
 
-  constructor() {
-    this.aiService = new AIService();
-    this.dbService = getDatabaseService();
+  // 지연 초기화를 위한 private 메서드
+  private initializeServices() {
+    if (!this.aiService) {
+      this.aiService = new AIService();
+    }
+    if (!this.dbService) {
+      this.dbService = getDatabaseService();
+    }
   }
 
   // 설문 목록 조회 (DB에서 조회)
   async getSurveys(req: Request, res: Response) {
     try {
-      const surveys = await this.dbService.getSurveyTypes();
+      this.initializeServices();
+      const surveys = await this.dbService!.getSurveyTypes();
 
       // 응답 형식 변환
       const formattedSurveys = surveys.map((survey: any) => ({
@@ -41,9 +47,10 @@ export class SurveyController {
   // 특정 설문 메타데이터 조회 (DB에서 조회)
   async getSurveyMetadata(req: Request, res: Response) {
     try {
+      this.initializeServices();
       const { type } = req.params as { type: SurveyType };
 
-      const surveyType = await this.dbService.getSurveyType(type);
+      const surveyType = await this.dbService!.getSurveyType(type);
 
       if (!surveyType) {
         return res.status(404).json({ error: "Survey type not found" });
@@ -72,16 +79,17 @@ export class SurveyController {
   // 설문 질문 조회 (DB에서 조회)
   async getSurveyQuestions(req: Request, res: Response) {
     try {
+      this.initializeServices();
       const { type } = req.params as { type: SurveyType };
       const { lang = "ko" } = req.query as { lang?: string };
 
-      const surveyType = await this.dbService.getSurveyType(type);
+      const surveyType = await this.dbService!.getSurveyType(type);
 
       if (!surveyType) {
         return res.status(404).json({ error: "Survey type not found" });
       }
 
-      const questions = await this.dbService.getSurveyQuestions(
+      const questions = await this.dbService!.getSurveyQuestions(
         surveyType.id,
         lang
       );
@@ -123,10 +131,11 @@ export class SurveyController {
   // 설문 결과 분석
   async evaluateSurvey(req: Request, res: Response) {
     try {
+      this.initializeServices();
       const { type } = req.params as { type: SurveyType };
       const { answers, language = "ko" } = req.body;
 
-      const surveyType = await this.dbService.getSurveyType(type);
+      const surveyType = await this.dbService!.getSurveyType(type);
 
       if (!surveyType) {
         return res.status(404).json({ error: "Survey type not found" });
@@ -137,7 +146,7 @@ export class SurveyController {
       }
 
       const startTime = Date.now();
-      const result = await this.aiService.evaluateSurvey(
+      const result = await this.aiService!.evaluateSurvey(
         type,
         answers,
         language
@@ -148,7 +157,7 @@ export class SurveyController {
       const responseId = `response_${Date.now()}_${Math.random()
         .toString(36)
         .substr(2, 9)}`;
-      await this.dbService.saveSurveyResponse({
+      await this.dbService!.saveSurveyResponse({
         responseId,
         surveyTypeId: surveyType.id,
         language,

@@ -9,13 +9,13 @@ import {
   SurveyQuestionsResponse,
   SurveyEvaluationResponse,
 } from "../types";
+import { getConfig } from "../config";
 
-// API 기본 설정
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
-
+// API 기본 설정 - 환경별 설정 사용
+const config = getConfig();
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
+  baseURL: config.api.baseUrl,
+  timeout: config.api.timeout,
   headers: {
     "Content-Type": "application/json",
   },

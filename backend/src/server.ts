@@ -1,16 +1,43 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
 import { getDatabaseService } from "./utils/database";
 import { logger } from "./utils/logger";
 import surveyRoutes from "./routes/surveys";
 import { getConfig, validateConfig } from "./config";
 
-dotenv.config();
+// 환경변수 로드 (가장 먼저 실행되어야 함)
+const envPath = path.resolve(__dirname, "../.env");
+logger.info(`Loading environment variables from: ${envPath}`);
+dotenv.config({ path: envPath });
 
-const app = express();
+// 환경변수 로드 확인
+logger.info("환경변수 확인:", {
+  NODE_ENV: process.env.NODE_ENV,
+  LOCAL_DB_HOST: process.env.LOCAL_DB_HOST,
+  LOCAL_DB_USER: process.env.LOCAL_DB_USER,
+  LOCAL_DB_NAME: process.env.LOCAL_DB_NAME,
+  LOCAL_DB_PORT: process.env.LOCAL_DB_PORT,
+});
+
+// 설정 로드
 const config = getConfig();
+logger.info("앱 설정 로드 완료:", {
+  environment: config.environment,
+  database: {
+    host: config.database.host,
+    port: config.database.port,
+    name: config.database.database,
+  },
+  server: {
+    port: config.server.port,
+    frontendUrl: config.server.frontendUrl,
+  },
+});
+
 const PORT = config.server.port;
+const app = express();
 
 // Middleware
 app.use(

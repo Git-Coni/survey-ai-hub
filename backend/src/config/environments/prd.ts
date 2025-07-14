@@ -1,36 +1,36 @@
-export const prdConfig = {
+export const prdConfig = () => ({
   // Database Configuration
   database: {
-    host: process.env.DB_HOST || "prd-db-host",
-    user: process.env.DB_USER || "prd-user",
-    password: process.env.DB_PASSWORD || "prd-password",
-    database: process.env.DB_NAME || "survey_ai_hub_prd",
-    port: parseInt(process.env.DB_PORT || "3306"),
+    host: process.env.PRD_DB_HOST!,
+    user: process.env.PRD_DB_USER!,
+    password: process.env.PRD_DB_PASSWORD!,
+    database: process.env.PRD_DB_NAME!,
+    port: parseInt(process.env.PRD_DB_PORT!),
   },
 
   // Server Configuration
   server: {
-    port: parseInt(process.env.PORT || "4000"),
-    frontendUrl: process.env.FRONTEND_URL || "https://survey-ai-hub.com",
+    port: parseInt(process.env.PRD_PORT!),
+    frontendUrl: process.env.PRD_FRONTEND_URL!,
   },
 
   // Logging Configuration
   logging: {
-    level: process.env.LOG_LEVEL || "warn",
-    enableConsole: false,
+    level: process.env.PRD_LOG_LEVEL!,
+    enableConsole: true,
     enableFile: true,
-    logFilePath: "./logs/prd.log",
+    logFilePath: "./logs/production.log",
   },
 
   // AI Service Configuration
   ai: {
-    model: process.env.AI_MODEL || "gpt-4",
-    apiKey: process.env.OPENAI_API_KEY || "",
-    maxTokens: parseInt(process.env.AI_MAX_TOKENS || "2000"),
+    model: process.env.PRD_AI_MODEL!,
+    apiKey: process.env.PRD_GEMINI_API_KEY!,
+    maxTokens: parseInt(process.env.PRD_AI_MAX_TOKENS!),
   },
 
   // Environment Info
   environment: "prd",
   isDevelopment: false,
   isProduction: true,
-};
+});

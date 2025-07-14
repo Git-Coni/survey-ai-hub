@@ -1,31 +1,31 @@
 export const localConfig = {
   // Database Configuration
   database: {
-    host: process.env.DB_HOST || "localhost",
-    user: process.env.DB_USER || "root",
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "survey_ai_hub",
-    port: parseInt(process.env.DB_PORT || "3306"),
+    host: process.env.LOCAL_DB_HOST!,
+    user: process.env.LOCAL_DB_USER!,
+    password: process.env.LOCAL_DB_PASSWORD!,
+    database: process.env.LOCAL_DB_NAME!,
+    port: parseInt(process.env.LOCAL_DB_PORT!),
   },
 
   // Server Configuration
   server: {
-    port: parseInt(process.env.PORT || "4000"),
-    frontendUrl: process.env.FRONTEND_URL || "http://localhost:3000",
+    port: parseInt(process.env.LOCAL_PORT!),
+    frontendUrl: process.env.LOCAL_FRONTEND_URL!,
   },
 
   // Logging Configuration
   logging: {
-    level: process.env.LOG_LEVEL || "info",
+    level: process.env.LOCAL_LOG_LEVEL!,
     enableConsole: true,
     enableFile: false,
   },
 
   // AI Service Configuration
   ai: {
-    model: process.env.AI_MODEL || "gpt-3.5-turbo",
-    apiKey: process.env.OPENAI_API_KEY || "",
-    maxTokens: parseInt(process.env.AI_MAX_TOKENS || "1000"),
+    model: process.env.LOCAL_AI_MODEL!,
+    apiKey: process.env.LOCAL_GEMINI_API_KEY!,
+    maxTokens: parseInt(process.env.LOCAL_AI_MAX_TOKENS!),
   },
 
   // Environment Info

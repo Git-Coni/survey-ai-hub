@@ -132,35 +132,116 @@ npm run dev:prd
 
 ### 프론트엔드 실행
 
+#### 로컬 환경 (기본)
+
 ```bash
 cd frontend
 npm install
 npm start
+npm run dev
+```
+
+#### 개발 환경
+
+```bash
+cd frontend
+npm run dev:dev
+```
+
+#### 프로덕션 환경
+
+```bash
+cd frontend
+npm run dev:prd
 ```
 
 ## 환경 변수 설정
 
-백엔드 `.env` 파일에 다음 설정이 필요합니다:
+### 환경별 설정 구조
+
+프로젝트는 환경별로 구분된 환경변수를 사용합니다:
+
+- **LOCAL\_\*** : 로컬 환경 설정
+- **DEV\_\*** : 개발 환경 설정
+- **PRD\_\*** : 프로덕션 환경 설정
+
+### .env 파일 구성 예시
 
 ```env
-# Server Configuration
-PORT=4000
-NODE_ENV=development
+# ========================================
+# LOCAL Environment Configuration
+# ========================================
+LOCAL_DB_HOST=localhost
+LOCAL_DB_USER=root
+LOCAL_DB_PASSWORD=your_local_password
+LOCAL_DB_NAME=survey_ai_hub
+LOCAL_DB_PORT=3306
+LOCAL_PORT=4000
+LOCAL_FRONTEND_URL=http://localhost:3000
+LOCAL_LOG_LEVEL=info
+LOCAL_AI_MODEL=gemini-pro
+LOCAL_GEMINI_API_KEY=your_gemini_api_key_here
+LOCAL_AI_MAX_TOKENS=1000
 
-# Frontend URL (CORS)
-FRONTEND_URL=http://localhost:3000
+# ========================================
+# DEV Environment Configuration
+# ========================================
+DEV_DB_HOST=192.168.0.3
+DEV_DB_USER=coni
+DEV_DB_PASSWORD=133007
+DEV_DB_NAME=survey_ai_hub_dev
+DEV_DB_PORT=3306
+DEV_PORT=4000
+DEV_FRONTEND_URL=https://dev.survey-ai-hub.com
+DEV_LOG_LEVEL=debug
+DEV_AI_MODEL=gemini-pro
+DEV_GEMINI_API_KEY=your_dev_gemini_api_key_here
+DEV_AI_MAX_TOKENS=1500
 
-# AI Services
-GEMINI_API_KEY=your_gemini_api_key_here
+# ========================================
+# PRD Environment Configuration
+# ========================================
+PRD_DB_HOST=192.168.0.3
+PRD_DB_USER=coni
+PRD_DB_PASSWORD=133007
+PRD_DB_NAME=survey_ai_hub_prd
+PRD_DB_PORT=3306
+PRD_PORT=4000
+PRD_FRONTEND_URL=https://survey-ai-hub.com
+PRD_LOG_LEVEL=warn
+PRD_AI_MODEL=gemini-pro
+PRD_GEMINI_API_KEY=your_prd_gemini_api_key_here
+PRD_AI_MAX_TOKENS=2000
+```
 
-# Database (MySQL)
-DB_HOST=your_db_host
-DB_USER=your_db_user
-DB_PASSWORD=your_db_password
-DB_NAME=survey_ai_hub
+### ⚠️ 중요 사항
 
-# Logging
-LOG_LEVEL=info
+- **모든 환경변수는 필수**입니다 (기본값 없음)
+- 환경변수가 누락되면 서버/앱 시작 시 오류가 발생합니다
+- 각 환경별로 모든 설정값을 반드시 입력해야 합니다
+
+### 프론트엔드 환경변수 설정
+
+프론트엔드도 환경별 설정을 지원합니다:
+
+```env
+# ========================================
+# LOCAL Environment Configuration
+# ========================================
+REACT_APP_LOCAL_API_URL=http://localhost:4000
+REACT_APP_LOCAL_API_TIMEOUT=10000
+
+# ========================================
+# DEV Environment Configuration
+# ========================================
+REACT_APP_DEV_API_URL=https://dev-api.survey-ai-hub.com
+REACT_APP_DEV_API_TIMEOUT=15000
+
+# ========================================
+# PRD Environment Configuration
+# ========================================
+REACT_APP_PRD_API_URL=https://api.survey-ai-hub.com
+REACT_APP_PRD_API_TIMEOUT=20000
 ```
 
 ## 데이터베이스 설정
@@ -187,6 +268,7 @@ mysql -u your_username -p survey_ai_hub < database/initial-data.sql
 4. **PowerShell**: && 연산자 사용 금지, 명령어는 한 줄씩 실행
 5. **코드 스타일**: 한글 주석, 명확한 변수명, 에러 처리, 함수 분리
 6. **데이터베이스 쿼리**: INSERT 쿼리 작성 시 ON DUPLICATE KEY UPDATE 구문을 사용하여 이미 존재하는 데이터는 업데이트되도록 구현
+7. **환경변수 파일**: .env 파일에는 한글 주석 사용 금지 (인코딩 문제 방지)
 
 ## API 엔드포인트
 
@@ -249,3 +331,68 @@ curl -X POST http://localhost:4000/api/surveys/teto-gender/evaluate \
 ## 로그
 
 서버 로그는 `backend/logs/` 폴더에 저장됩니다.
+
+## 🐞 로컬 디버깅(백엔드) 실행 방법
+
+### 1. ts-node로 직접 디버깅 (TypeScript 소스 브레이크포인트)
+
+```powershell
+cd backend
+npm install
+npx cross-env NODE_ENV=local ts-node --inspect src/server.ts
+```
+
+- 위 명령어 실행 후, VSCode에서 "실행 및 디버그" → "Chrome에 연결" 또는 "Node.js에 연결" 선택
+- 브라우저에서 `chrome://inspect` 접속 후 디버깅 가능
+
+### 2. 빌드 후 디버깅 (JavaScript 빌드 결과물 브레이크포인트)
+
+```powershell
+cd backend
+npm run build
+npx cross-env NODE_ENV=local node --inspect dist/server.js
+```
+
+- TypeScript 소스맵(`tsconfig.json`의 `sourceMap: true`)이 설정되어 있으면, TypeScript 원본에서 브레이크포인트 가능
+
+### 3. VSCode launch.json 예시
+
+`.vscode/launch.json`에 아래와 같이 추가하면 VSCode에서 바로 디버깅 가능:
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "ts-node 디버그 (백엔드)",
+      "program": "${workspaceFolder}/backend/src/server.ts",
+      "runtimeArgs": ["-r", "ts-node/register"],
+      "env": {
+        "NODE_ENV": "local"
+      },
+      "cwd": "${workspaceFolder}/backend",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "빌드 결과물 디버그 (백엔드)",
+      "program": "${workspaceFolder}/backend/dist/server.js",
+      "env": {
+        "NODE_ENV": "local"
+      },
+      "cwd": "${workspaceFolder}/backend",
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}
+```
+
+### 4. 주의사항
+
+- PowerShell에서는 환경변수 설정에 cross-env를 반드시 사용해야 함
+- tsconfig.json에 `sourceMap: true`가 반드시 설정되어야 TypeScript 원본에서 브레이크포인트 가능
+- .env 파일이 backend 폴더에 정확히 존재해야 하며, 모든 LOCAL\_ 변수들이 누락 없이 입력되어야 함
+- 디버깅 중 환경변수 누락/오타가 있으면 서버가 시작되지 않음

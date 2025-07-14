@@ -3,15 +3,15 @@
   "version": "1.0.0",
   "main": "dist/server.js",
   "scripts": {
-    "start": "node dist/server.js",
-    "dev": "NODE_ENV=local ts-node src/server.ts",
-    "dev:dev": "NODE_ENV=dev ts-node src/server.ts",
-    "dev:prd": "NODE_ENV=prd ts-node src/server.ts",
-    "build": "tsc",
-    "build:dev": "NODE_ENV=dev tsc",
-    "build:prd": "NODE_ENV=prd tsc",
-    "start:dev": "NODE_ENV=dev node dist/server.js",
-    "start:prd": "NODE_ENV=prd node dist/server.js",
+    "start": "cross-env NODE_ENV=local node dist/server.js",
+    "dev": "cross-env NODE_ENV=local ts-node src/server.ts",
+    "dev:dev": "cross-env NODE_ENV=dev ts-node src/server.ts",
+    "dev:prd": "cross-env NODE_ENV=prd ts-node src/server.ts",
+    "build": "cross-env NODE_ENV=local tsc",
+    "build:dev": "cross-env NODE_ENV=dev tsc",
+    "build:prd": "cross-env NODE_ENV=prd tsc",
+    "start:dev": "cross-env NODE_ENV=dev node dist/server.js",
+    "start:prd": "cross-env NODE_ENV=prd node dist/server.js",
     "migrate": "node database/migrate.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -32,6 +32,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
-    "@types/node": "^24.0.13"
+    "@types/node": "^24.0.13",
+    "cross-env": "^7.0.3"
   }
 }

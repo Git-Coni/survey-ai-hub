@@ -15,7 +15,14 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "dev": "react-scripts start",
+    "dev:local": "REACT_APP_ENV=local react-scripts start",
+    "dev:dev": "REACT_APP_ENV=dev react-scripts start",
+    "dev:prd": "REACT_APP_ENV=prd react-scripts start",
     "build": "react-scripts build",
+    "build:local": "REACT_APP_ENV=local react-scripts build",
+    "build:dev": "REACT_APP_ENV=dev react-scripts build",
+    "build:prd": "REACT_APP_ENV=prd react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
