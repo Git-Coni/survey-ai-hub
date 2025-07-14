@@ -45,7 +45,7 @@ export class ApiService {
   // 설문 목록 조회
   static async getSurveys(): Promise<SurveyMetadata[]> {
     const response: AxiosResponse<SurveysResponse> = await apiClient.get(
-      "/api/surveys"
+      "/surveys"
     );
     return response.data.surveys;
   }
@@ -53,7 +53,7 @@ export class ApiService {
   // 특정 설문 메타데이터 조회
   static async getSurveyMetadata(type: SurveyType): Promise<SurveyMetadata> {
     const response: AxiosResponse<SurveyMetadataResponse> = await apiClient.get(
-      `/api/surveys/${type}`
+      `/surveys/${type}`
     );
     return response.data.metadata;
   }
@@ -64,7 +64,7 @@ export class ApiService {
     language: string = "ko"
   ): Promise<{ questions: SurveyQuestion[]; metadata: SurveyMetadata }> {
     const response: AxiosResponse<SurveyQuestionsResponse> =
-      await apiClient.get(`/api/surveys/${type}/questions?lang=${language}`);
+      await apiClient.get(`/surveys/${type}/questions?lang=${language}`);
     return {
       questions: response.data.questions,
       metadata: response.data.metadata,
@@ -78,7 +78,7 @@ export class ApiService {
     language: string = "ko"
   ): Promise<{ result: SurveyResult; metadata: SurveyMetadata }> {
     const response: AxiosResponse<SurveyEvaluationResponse> =
-      await apiClient.post(`/api/surveys/${type}/evaluate`, {
+      await apiClient.post(`/surveys/${type}/evaluate`, {
         answers,
         language,
       });
